@@ -1,10 +1,7 @@
 
-import sys
 import ply.lex as lex
-import re
 
 class LEXER(object):
-    # funtion to write Tokens
     def __init__(self):
         self.lexer = lex.lex(module=self)
     # copied from site https://www.dabeaz.com/ply/ply.html
@@ -46,13 +43,12 @@ class LEXER(object):
         ':': 'TWOP'
     }
 
-    # adding tokens together
     tokens = tokens + list(reserved.values())
 
     # IDs
     def t_ID(self,t):
         r':|[a-zA-Z_][a-zA-Z_0-9]*'
-        t.type = self.reserved.get(t.value, 'ID')  # Check for reserved words
+        t.type = self.reserved.get(t.value, 'ID')  
         return t
 
     # Regular expression rules for simple tokens

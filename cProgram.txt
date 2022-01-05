@@ -1,0 +1,12 @@
+float a = 2;
+float b = 1;
+float t1 = a == b;
+
+if (!t1) goto l2;
+a = 1;
+
+goto l1;
+l2:
+b = 2;
+
+l1:;
