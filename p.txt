@@ -1,15 +1,15 @@
 //program in python
-a = 5
+a = 20
 b = 10
 if a > b:
 {
-a = 20
+a = 5
 }
-elif a == b:
+elif a < b:
 {
-b = 4
+b = 1
 }
 else:
 {
-a = 25
+a = 2
 }
