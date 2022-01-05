@@ -1,20 +1,19 @@
 import json
-
 import ply.yacc as yacc
 from lex import LEXER as obj
 import re
 
 
-class YACC(object):
-
-    #getting instance
+class pytonToC(object):
     tokens = obj.tokens
     _obj = obj()
     lexer = _obj.lexer
     precedence = (
         ('nonassoc', 'GE', 'GT', 'LE', 'LT', 'EQUAL', 'NE',),
         ('left', 'TIMES', 'DIVIDE'),
-        ('left', 'PLUS', 'MINUS')
+        ('left', 'PLUS', 'MINUS'),
+        ('left', 'TIMES', 'DIV', 'MOD'),
+        ('right', 'UMINUS', 'UPLUS'),
     )
 
     def __init__(self):
@@ -22,10 +21,10 @@ class YACC(object):
         self.parseTree = None
         self.three_address_code = None
 
-        self.assign_symbols = ['=']
-        self.operation_symbols = ['+', '-', '*', '/',
+        self.assign_symbols = ['=', '+=', '-=', '*=']
+        self.operation_symbols = ['+', '-', '*', '/', '&&', '||',
                                   '==',
-                                  '>', '>=', '<', '<=', '!=']
+                                  '>', '>=', '<', '<=', '!=', '%']
         self.keywords = self._obj.reserved.keys()
 
         self.symbol_table = {}
@@ -41,7 +40,7 @@ class YACC(object):
         self.labelCount += 1
         return "l%d" % self.labelCount
 
-    # grammar rules start *********************
+    # ------------------------   grammar rules start here ----------------------
 
     def p_stmts(self, p):
         """
@@ -54,16 +53,31 @@ class YACC(object):
             p[0] = p[1] + [p[2]]
             self.parseTree = p[0]
 
-    def p_statement(self, p):
+    def p_stmt(self, p):
         """
         stmt : assignment
         | for
         | if
         | while
         | expr
+        | print
         """
         p[0] = p[1]
+        # print
+    def p_print(self, p):
+        """
+        print : PRINT LPRAN STRING_LITERAL print_args RPRAN
+        """
+        p[0] = tuple((p[1], p[3], p[4]))
 
+    def p_print_args(self, p):
+        """
+        print_args : expr
+                    | empty
+        """
+        p[0] = p[1]
+        
+        # if stmt
     def p_if(self, p):
         """
         if : IF expr TWOP LBRACKET stmts RBRACKET elif
@@ -154,8 +168,6 @@ class YACC(object):
         'empty :'
         p[0] = None
 
-
-    #gramers
     def parse(self, input_data):
         self.parser.parse(input_data, lexer=self.lexer)
         return self.parseTree
@@ -191,7 +203,6 @@ class YACC(object):
 
         threeAddressCodeBody = ""
 
-        # if not in symbol table
         if varOfFor not in self.symbol_table:
             threeAddressCodeBody += f"float {varOfFor};\n"
             self.symbol_table[varOfFor] = 'float'
@@ -251,7 +262,6 @@ class YACC(object):
 
             _instruction = _instruction[3]
 
-        # check out conditions
         conditions = ""
         threeAddressCodeBody = ""
         if_done_label = self.getLabel()
@@ -315,22 +325,22 @@ class YACC(object):
 
         return returnVal
 
-    def makeCode(self):
-        body = self.yacc_program(self.parseTree)
-        cThreeAddressCode = body
-        return cThreeAddressCode
+    def tac(self):
+        body = self.tac_program(self.parse_tree)
+        c_tac_code = "#include <stdio.h>\nint main () {\n%s\nreturn 0;\n}" % body
+        c_tac_code = re.sub(' +', ' ', c_tac_code)
+        c_tac_code = re.sub('\n+', '\n', c_tac_code)
+        return c_tac_code
 
 
+#test
+if __name__ == '__main__':
 
-
-##test
-
-threeAddressCode = YACC()
-pCode = open('pythonProgram.txt')
-info = pCode.read()
-pCode.close()
-threeAddressCode.parse(info)
-cCode = open('cProgram.txt', 'w')
-cCode.write(threeAddressCode.makeCode())
-print("Check out cProgram.txt")
-cCode.close()
+    parser = pytonToC()
+    _input = open('pythonProgram.txt')
+    test_input = _input.read()
+    parser.parse(test_input)
+    _out = open('cProgram.txt', 'w')
+    _out.write(parser.tac())
+    _input.close()
+    _out.close()
